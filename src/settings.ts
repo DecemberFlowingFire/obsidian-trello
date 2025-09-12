@@ -8,7 +8,10 @@ import { take } from 'rxjs/operators';
 
 export class TrelloSettings extends PluginSettingTab {
   private readonly boardSelectModal = new BoardSelectModal(this.plugin.app, this.plugin);
-  constructor(app: App, private readonly plugin: TrelloPlugin) {
+  constructor(
+    app: App,
+    private readonly plugin: TrelloPlugin
+  ) {
     super(app, plugin);
   }
 
@@ -28,6 +31,7 @@ export class TrelloSettings extends PluginSettingTab {
       this.buildMovedCardPositionSetting(this.containerEl, settings);
       this.buildVerboseLoggingSetting(this.containerEl, settings);
       this.prepopulateTitleConfigSetting(this.containerEl, settings);
+      this.prepopulateDescriptionConfigSetting(this.containerEl, settings);
       this.openInDesktopSetting(this.containerEl, settings);
     });
   }
@@ -91,6 +95,23 @@ export class TrelloSettings extends PluginSettingTab {
       .addToggle((toggle) => {
         toggle.setValue(settings.prepopulateTitle).onChange((value) => {
           this.plugin.state.updateSetting('prepopulateTitle', value);
+        });
+      });
+  }
+
+  private prepopulateDescriptionConfigSetting(containerEl: HTMLElement, settings: PluginSettings): void {
+    this.plugin.log(
+      'TrelloSettings.buildConfigSetting',
+      `-> Adding prepopulate description setting with initial value ${settings.prepopulateDescription}`
+    );
+    new Setting(containerEl)
+      .setName('Prepopulate Description')
+      .setDesc(
+        'Populate card description with the note content when creating a new card. Can be overridden when adding a card.'
+      )
+      .addToggle((toggle) => {
+        toggle.setValue(settings.prepopulateDescription).onChange((value) => {
+          this.plugin.state.updateSetting('prepopulateDescription', value);
         });
       });
   }

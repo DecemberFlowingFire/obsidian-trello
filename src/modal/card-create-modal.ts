@@ -26,7 +26,10 @@ export class CardCreateModal extends Modal {
   private position!: HTMLSelectElement;
   private finishedCardCreation = false;
 
-  constructor(app: App, private readonly plugin: TrelloPlugin) {
+  constructor(
+    app: App,
+    private readonly plugin: TrelloPlugin
+  ) {
     super(app);
   }
 
@@ -117,6 +120,14 @@ export class CardCreateModal extends Modal {
     const descContainer = wrapper.createDiv({
       cls: 'trello-card-create--desc-container'
     });
+
+    if (this.plugin.state.getSetting('prepopulateDescription') === true) {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile) {
+        descContainer.value = activeFile.content;
+      }
+    }
+
     return descContainer.createEl('textarea', {
       cls: 'trello-card-create--desc',
       attr: {

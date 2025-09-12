@@ -27,6 +27,7 @@ export interface PluginSettings {
   movedCardPosition: CardPosition;
   verboseLogging: boolean;
   prepopulateTitle: boolean;
+  prepopulateDescription: boolean;
   openInDesktop: boolean;
 }
 
