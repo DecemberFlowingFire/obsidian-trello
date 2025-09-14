@@ -124,7 +124,9 @@ export class CardCreateModal extends Modal {
     if (this.plugin.state.getSetting('prepopulateDescription') === true) {
       const activeFile = this.app.workspace.getActiveFile();
       if (activeFile) {
-        descContainer.value = activeFile.content;
+        activeFile.vault.cachedRead(activeFile).then((data) => {
+          descContainer.innerHTML = data.replace(/\n/g, '<br />');
+        });
       }
     }
 
