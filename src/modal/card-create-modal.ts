@@ -121,22 +121,23 @@ export class CardCreateModal extends Modal {
       cls: 'trello-card-create--desc-container'
     });
 
-    if (this.plugin.state.getSetting('prepopulateDescription') === true) {
-      const activeFile = this.app.workspace.getActiveFile();
-      if (activeFile) {
-        activeFile.vault.cachedRead(activeFile).then((data) => {
-          descContainer.innerHTML = data.replace(/\n/g, '<br />');
-        });
-      }
-    }
-
-    return descContainer.createEl('textarea', {
+    const textarea = descContainer.createEl('textarea', {
       cls: 'trello-card-create--desc',
       attr: {
         onInput: 'this.parentNode.dataset.replicatedValue = this.value',
         placeholder: 'Add a more detailed description...'
       }
     });
+
+    if (this.plugin.state.getSetting('prepopulateDescription') === true) {
+      const activeFile = this.app.workspace.getActiveFile();
+      if (activeFile) {
+        activeFile.vault.cachedRead(activeFile).then((data) => {
+          textarea.value = data;
+        });
+      }
+    }
+    return textarea;
   }
 
   private renderDue(parent: HTMLElement): HTMLInputElement {
