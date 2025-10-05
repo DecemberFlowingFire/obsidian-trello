@@ -51,7 +51,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 
 export const DEFAULT_DATA: PluginData = {
   settings: DEFAULT_SETTINGS,
-  version: '2.3.2',
+  version: '2.3.3',
   firstRun: true,
   connectedCards: {}
 };
