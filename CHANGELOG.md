@@ -1,3 +1,11 @@
+# v2.3.3
+## Fixes
+
+- Update dependencies.
+
+## Features
+- New setting to pre-populate the description of a new trello card with the note it's being attached to. Thanks @ChrisChinchilla!
+
 # v2.3.2
 
 ## Fixes
