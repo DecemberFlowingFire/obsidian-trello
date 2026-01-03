@@ -18,3 +18,4 @@ data.json
 
 # secrets
 .env
+.DS_Store

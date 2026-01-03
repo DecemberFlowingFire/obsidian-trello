@@ -1,5 +1,3 @@
-import { TFile } from 'obsidian';
-
 // Plugin
 export interface PluginData {
   settings: PluginSettings;
