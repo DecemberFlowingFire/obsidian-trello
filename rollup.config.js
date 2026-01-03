@@ -6,12 +6,19 @@ import scss from 'rollup-plugin-scss';
 import terser from '@rollup/plugin-terser';
 import replace from '@rollup/plugin-replace';
 
+import { writeFileSync } from 'fs';
+
 const isProd = process.env.BUILD === 'production';
 const plugins = [
   typescript(),
   nodeResolve({ browser: true }),
   commonjs(),
-  scss({ output: 'styles.css' }),
+  scss({
+    output: function (styles) {
+      writeFileSync('styles.css', styles);
+    },
+    outputStyle: 'compressed'
+  }),
   replace({ 'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV), preventAssignment: true })
 ];
 
