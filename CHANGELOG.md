@@ -1,3 +1,10 @@
+# v2.3.4
+## Fixes
+
+- Update dependencies.
+- Update ESLint, rollup, and TypeScript configurations.
+- Fix build errors on release.
+
 # v2.3.3
 ## Fixes
 
