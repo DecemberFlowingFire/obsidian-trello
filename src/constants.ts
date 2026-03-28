@@ -47,7 +47,8 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   verboseLogging: false,
   prepopulateTitle: false,
   prepopulateDescription: false,
-  openInDesktop: false
+  openInDesktop: false,
+  exportPath: ''
 };
 
 export const DEFAULT_DATA: PluginData = {

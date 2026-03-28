@@ -27,6 +27,7 @@ export interface PluginSettings {
   prepopulateTitle: boolean;
   prepopulateDescription: boolean;
   openInDesktop: boolean;
+  exportPath: string;
 }
 
 export enum PluginError {

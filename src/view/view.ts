@@ -1,4 +1,4 @@
-import { CUSTOM_ICONS, TRELLO_ERRORS, TRELLO_VIEW_TYPE } from '../constants';
+import { CUSTOM_ICONS, TRELLO_ERRORS, TRELLO_VIEW_TYPE, LogLevel } from '../constants';
 import { ItemView, MarkdownRenderer, Notice, WorkspaceLeaf, setIcon, Platform } from 'obsidian';
 import {
   PluginError,
@@ -200,7 +200,7 @@ export class TrelloView extends ItemView {
   }
 
   /**
-   * Export current card to Markdown and display in textarea
+   * Export current card to Markdown file
    */
   private async exportCard(): Promise<void> {
     const card = this.viewManager.currentCard.value;
@@ -213,52 +213,50 @@ export class TrelloView extends ItemView {
       return;
     }
 
-    const markdown = exportCardToMarkdown(card, list, comments || [], checklists || []);
-    this.renderExportArea(markdown);
+    try {
+      new Notice('Exporting Trello card...');
+
+      const markdown = exportCardToMarkdown(card, list, comments || [], checklists || []);
+
+      // Get export path from settings
+      const exportPath = this.plugin.state.getSetting('exportPath');
+      const fileName = this.sanitizeFileName(card.name);
+
+      // Build full path
+      let fullPath: string;
+      if (exportPath) {
+        // Ensure folder exists
+        const folder = this.app.vault.getAbstractFileByPath(exportPath);
+        if (!folder) {
+          // Create folder if it doesn't exist
+          await this.app.vault.createFolder(exportPath);
+        }
+        fullPath = `${exportPath}/${fileName}.md`;
+      } else {
+        fullPath = `${fileName}.md`;
+      }
+
+      // Create the file
+      const newFile = await this.app.vault.create(fullPath, markdown);
+
+      // Open the new file
+      const leaf = this.app.workspace.getLeaf();
+      await leaf.openFile(newFile);
+
+      new Notice(`Exported to ${fullPath}`);
+      this.plugin.log('TrelloView.exportCard', `Exported card to ${fullPath}`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      new Notice('Failed to export card');
+      this.plugin.log('TrelloView.exportCard', `Export failed: ${err}`, LogLevel.Error);
+    }
   }
 
   /**
-   * Render export textarea below the card view
+   * Sanitize filename by removing invalid characters
    */
-  private renderExportArea(markdown: string): void {
-    // Remove existing export area if any
-    const existing = this.contentEl.querySelector('.trello-export--container');
-    if (existing) {
-      existing.remove();
-      return; // Toggle off if already showing
-    }
-
-    const container = this.contentEl.createDiv('trello-export--container');
-    container.style.marginTop = '10px';
-    container.style.padding = '10px';
-    container.style.borderTop = '1px solid var(--background-modifier-border)';
-
-    // Header with copy button
-    const header = container.createDiv('trello-export--header');
-    header.style.display = 'flex';
-    header.style.justifyContent = 'space-between';
-    header.style.alignItems = 'center';
-    header.style.marginBottom = '8px';
-
-    header.createEl('span', { text: 'Exported Markdown', cls: 'trello-export--title' });
-
-    const copyBtn = header.createEl('button', { text: 'Copy', cls: 'trello-export--copy-btn' });
-    copyBtn.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(markdown);
-      new Notice('Copied to clipboard');
-    });
-
-    // Textarea
-    const textarea = container.createEl('textarea', {
-      cls: 'trello-export--textarea'
-    });
-    textarea.value = markdown;
-    textarea.style.width = '100%';
-    textarea.style.height = '300px';
-    textarea.style.fontFamily = 'monospace';
-    textarea.style.fontSize = '12px';
-    textarea.style.resize = 'vertical';
-    textarea.readOnly = true;
+  private sanitizeFileName(name: string): string {
+    return name.replace(/[\\/:*?"<>|]/g, '-');
   }
 
   /**

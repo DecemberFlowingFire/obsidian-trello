@@ -33,6 +33,7 @@ export class TrelloSettings extends PluginSettingTab {
       this.prepopulateTitleConfigSetting(this.containerEl, settings);
       this.prepopulateDescriptionConfigSetting(this.containerEl, settings);
       this.openInDesktopSetting(this.containerEl, settings);
+      this.buildExportPathSetting(this.containerEl, settings);
     });
   }
 
@@ -201,6 +202,24 @@ export class TrelloSettings extends PluginSettingTab {
         toggle.setValue(settings.verboseLogging).onChange((value) => {
           this.plugin.state.updateSetting('verboseLogging', value);
         });
+      });
+  }
+
+  private buildExportPathSetting(containerEl: HTMLElement, settings: PluginSettings): void {
+    this.plugin.log(
+      'TrelloSettings.buildExportPathSetting',
+      `-> Adding export path setting with initial value ${settings.exportPath}`
+    );
+    new Setting(containerEl)
+      .setName('Export Path')
+      .setDesc('Path to save exported Trello cards. Leave empty to save in vault root. Example: "Cards/Trello"')
+      .addText((text) => {
+        text
+          .setPlaceholder('Cards/Trello')
+          .setValue(settings.exportPath)
+          .onChange((value: string) => {
+            this.plugin.state.updateSetting('exportPath', value.trim());
+          });
       });
   }
 }
