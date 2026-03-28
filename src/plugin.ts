@@ -189,6 +189,7 @@ export class TrelloPlugin extends Plugin {
     const file = this.app.workspace.getActiveFile();
     if (!file) {
       this.log('TrelloPlugin.connectTrelloCard', 'No file available to connect trello card.', LogLevel.Warn);
+      new Notice('Please open a note first to connect a Trello card.');
       return;
     }
 
@@ -422,13 +423,13 @@ export class TrelloPlugin extends Plugin {
 
       // Get list
       const lists = await this.api.getListsFromBoard(card.idBoard).toPromise();
-      const list = lists?.find(l => l.id === card.idList) || null;
+      const list = lists?.find((l) => l.id === card.idList) || null;
 
       // Get comments (actions)
-      const comments = await this.api.getActionsFromCard(cardId).toPromise() || [];
+      const comments = (await this.api.getActionsFromCard(cardId).toPromise()) || [];
 
       // Get checklists
-      const checklists = await this.api.getChecklistsFromCard(cardId, card.idChecklists).toPromise() || [];
+      const checklists = (await this.api.getChecklistsFromCard(cardId, card.idChecklists).toPromise()) || [];
 
       // Generate Markdown
       const markdown = exportCardToMarkdown(card, list, comments, checklists);
