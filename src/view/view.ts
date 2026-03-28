@@ -16,13 +16,17 @@ import { takeUntil, tap } from 'rxjs/operators';
 import { Accordion } from '../accordion/accordion';
 import { TrelloPlugin } from '../plugin';
 import { TrelloViewManager } from './view-manager';
+import { exportCardToMarkdown } from '../export';
 
 export class TrelloView extends ItemView {
   private readonly destroy = new Subject<void>();
   private readonly update = new Subject<void>();
   private readonly viewManager = new TrelloViewManager(this.plugin, this.destroy, this.update);
 
-  constructor(private readonly plugin: TrelloPlugin, leaf: WorkspaceLeaf) {
+  constructor(
+    private readonly plugin: TrelloPlugin,
+    leaf: WorkspaceLeaf
+  ) {
     super(leaf);
 
     // Re-render whenever state changes
@@ -190,6 +194,71 @@ export class TrelloView extends ItemView {
       this.plugin.customizeUIModal.source.next(this.viewManager.connectedId.value);
       this.plugin.customizeUIModal.open();
     });
+    this.renderNavButton(buttons, 'Export to Markdown', 'download', () => {
+      this.exportCard();
+    });
+  }
+
+  /**
+   * Export current card to Markdown and display in textarea
+   */
+  private async exportCard(): Promise<void> {
+    const card = this.viewManager.currentCard.value;
+    const list = this.viewManager.currentList.value;
+    const comments = this.viewManager.currentActions.value;
+    const checklists = this.viewManager.currentChecklists.value;
+
+    if (!card) {
+      new Notice('No card connected');
+      return;
+    }
+
+    const markdown = exportCardToMarkdown(card, list, comments || [], checklists || []);
+    this.renderExportArea(markdown);
+  }
+
+  /**
+   * Render export textarea below the card view
+   */
+  private renderExportArea(markdown: string): void {
+    // Remove existing export area if any
+    const existing = this.contentEl.querySelector('.trello-export--container');
+    if (existing) {
+      existing.remove();
+      return; // Toggle off if already showing
+    }
+
+    const container = this.contentEl.createDiv('trello-export--container');
+    container.style.marginTop = '10px';
+    container.style.padding = '10px';
+    container.style.borderTop = '1px solid var(--background-modifier-border)';
+
+    // Header with copy button
+    const header = container.createDiv('trello-export--header');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '8px';
+
+    header.createEl('span', { text: 'Exported Markdown', cls: 'trello-export--title' });
+
+    const copyBtn = header.createEl('button', { text: 'Copy', cls: 'trello-export--copy-btn' });
+    copyBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(markdown);
+      new Notice('Copied to clipboard');
+    });
+
+    // Textarea
+    const textarea = container.createEl('textarea', {
+      cls: 'trello-export--textarea'
+    });
+    textarea.value = markdown;
+    textarea.style.width = '100%';
+    textarea.style.height = '300px';
+    textarea.style.fontFamily = 'monospace';
+    textarea.style.fontSize = '12px';
+    textarea.style.resize = 'vertical';
+    textarea.readOnly = true;
   }
 
   /**
