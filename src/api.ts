@@ -63,6 +63,22 @@ export class TrelloAPI {
   }
 
   /**
+   * Get a specific card by card ID only.
+   * This is useful for export functionality.
+   */
+  getCard(cardId: string): Observable<TrelloCard> {
+    this.plugin.log('TrelloAPI.getCard', '');
+    if (this.token.value === '') {
+      return throwError(() => PluginError.NoToken);
+    }
+    const url = this.auth(`${TRELLO_API}/1/cards/${cardId}`);
+    return ajax<TrelloCard>({ url }).pipe(
+      catchError((err) => this.handleAPIError(err)),
+      map((resp) => resp.response)
+    );
+  }
+
+  /**
    * Get a specific card by board and card ID.
    * This uses the cache if possible.
    */

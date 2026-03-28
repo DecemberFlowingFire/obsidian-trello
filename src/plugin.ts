@@ -21,6 +21,7 @@ import { TrelloView } from './view/view';
 import { YamlHandler } from './yaml-handler';
 import { migrate } from './migrations';
 import { nanoid } from 'nanoid';
+import { exportCardToMarkdown } from './export';
 
 export class TrelloPlugin extends Plugin {
   yamlHandler = new YamlHandler(this);
@@ -94,6 +95,13 @@ export class TrelloPlugin extends Plugin {
         this.revealTrelloLeaf(true);
       },
       icon: CUSTOM_ICONS.trello.id
+    });
+
+    this.addCommand({
+      id: 'trello-plugin-export-card',
+      name: 'Export Trello card to Markdown',
+      callback: this.exportTrelloCard.bind(this),
+      icon: 'download'
     });
 
     // If this is the first run, add the trello pane.
@@ -382,5 +390,70 @@ export class TrelloPlugin extends Plugin {
       this.log('TrelloPlugin.revealTrelloLeaf', '-> Trello leaf found, revealing.');
       this.app.workspace.revealLeaf(leaves[0]);
     }
+  }
+
+  /**
+   * Export the currently connected Trello card to a Markdown file
+   */
+  private async exportTrelloCard(): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file) {
+      new Notice('No active file');
+      return;
+    }
+
+    const boardCardId = await this.yamlHandler.getPropertyValue(MetaKey.BoardCard, file);
+    if (!boardCardId) {
+      new Notice('This note is not connected to a Trello card');
+      return;
+    }
+
+    const [, cardId] = boardCardId.split(';');
+
+    try {
+      new Notice('Exporting Trello card...');
+
+      // Get card data
+      const card = await this.api.getCard(cardId).toPromise();
+      if (!card) {
+        new Notice('Failed to fetch card');
+        return;
+      }
+
+      // Get list
+      const lists = await this.api.getListsFromBoard(card.idBoard).toPromise();
+      const list = lists?.find(l => l.id === card.idList) || null;
+
+      // Get comments (actions)
+      const comments = await this.api.getActionsFromCard(cardId).toPromise() || [];
+
+      // Get checklists
+      const checklists = await this.api.getChecklistsFromCard(cardId, card.idChecklists).toPromise() || [];
+
+      // Generate Markdown
+      const markdown = exportCardToMarkdown(card, list, comments, checklists);
+
+      // Create new note
+      const fileName = `Trello - ${this.sanitizeFileName(card.name)}.md`;
+      const newFile = await this.app.vault.create(fileName, markdown);
+
+      // Open the new file
+      const leaf = this.app.workspace.getLeaf();
+      await leaf.openFile(newFile);
+
+      new Notice(`Exported to ${fileName}`);
+      this.log('TrelloPlugin.exportTrelloCard', `Exported card to ${fileName}`);
+    } catch (err) {
+      console.error('Export failed:', err);
+      new Notice('Failed to export card');
+      this.log('TrelloPlugin.exportTrelloCard', `Export failed: ${err}`, LogLevel.Error);
+    }
+  }
+
+  /**
+   * Sanitize filename by removing invalid characters
+   */
+  private sanitizeFileName(name: string): string {
+    return name.replace(/[\\/:*?"<>|]/g, '-');
   }
 }
