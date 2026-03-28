@@ -195,6 +195,7 @@ export class TrelloPlugin extends Plugin {
 
     // Might need this later
     let board: TrelloBoard;
+    let loadingNotice: Notice | null = null;
 
     this.log('TrelloPlugin.connectTrelloCard', 'Connecting trello card');
     this.state.settings
@@ -202,8 +203,20 @@ export class TrelloPlugin extends Plugin {
         take(1),
         map((s) => s.selectedBoards),
         // If boards were selected, use those. Otherwise, call API.
-        concatMap((boards) => iif(() => boards.length > 0, of(boards), this.api.getBoards())),
+        concatMap((boards) => {
+          if (boards.length > 0) {
+            return of(boards);
+          }
+          // Show loading notice
+          loadingNotice = new Notice('Loading boards from Trello...', 0);
+          return this.api.getBoards();
+        }),
         tap(() => {
+          // Hide loading notice
+          if (loadingNotice) {
+            loadingNotice.hide();
+            loadingNotice = null;
+          }
           this.log('TrelloPlugin.connectTrelloCard', '-> Got boards');
         }),
         // Open board suggestion modal
@@ -274,6 +287,11 @@ export class TrelloPlugin extends Plugin {
           this.revealTrelloLeaf(true);
         },
         error: (err) => {
+          // Hide loading notice if still showing
+          if (loadingNotice) {
+            loadingNotice.hide();
+            loadingNotice = null;
+          }
           if (err === PluginError.Abort) {
             this.log('TrelloPlugin.connectTrelloCard', '-> Aborting connect flow.');
           } else if (err === PluginError.Unauthorized) {
@@ -288,6 +306,10 @@ export class TrelloPlugin extends Plugin {
           } else if (err === PluginError.Unknown) {
             this.log('TrelloPlugin.connectTrelloCard', '-> Caught unknown error.', LogLevel.Error);
             new Notice(TRELLO_ERRORS.other);
+          } else {
+            // Network or other errors
+            this.log('TrelloPlugin.connectTrelloCard', `-> Error: ${err}`, LogLevel.Error);
+            new Notice('Failed to connect to Trello. Please check your network.');
           }
         }
       });

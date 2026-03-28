@@ -16,9 +16,12 @@ import {
 } from './interfaces';
 import { RequestUrlResponse, requestUrl } from 'obsidian';
 import { TRELLO_API, TRELLO_API_KEY } from './constants';
-import { catchError, map, takeUntil, tap } from 'rxjs/operators';
+import { catchError, map, takeUntil, tap, timeout } from 'rxjs/operators';
 
 import { TrelloPlugin } from './plugin';
+
+// API request timeout in milliseconds (30 seconds)
+const API_TIMEOUT = 30000;
 
 function toAjaxResponse<T>(requestResponse: RequestUrlResponse): AjaxResponse<T> {
   return {
@@ -29,8 +32,9 @@ function toAjaxResponse<T>(requestResponse: RequestUrlResponse): AjaxResponse<T>
 }
 
 function ajax<T>(config: AjaxConfig): Observable<AjaxResponse<T>> {
-  return from(requestUrl({ url: config.url, method: config.method ?? 'GET' })).pipe(
-    map((resp) => toAjaxResponse<T>(resp))
+  return from(requestUrl({ url: config.url, method: config.method ?? 'GET' }, { timeout: API_TIMEOUT })).pipe(
+    map((resp) => toAjaxResponse<T>(resp)),
+    timeout(API_TIMEOUT)
   );
 }
 
